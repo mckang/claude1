@@ -57,6 +57,12 @@ describe("addTodo", () => {
     addTodo(SAMPLE, "변경 테스트");
     expect(SAMPLE).toEqual(original);
   });
+
+  it("연속으로 추가한 항목들은 서로 다른 id를 가진다", () => {
+    const first = addTodo([], "첫 번째");
+    const second = addTodo(first, "두 번째");
+    expect(second[0].id).not.toBe(second[1].id);
+  });
 });
 
 // ──────────────────────────────────────────────
@@ -89,6 +95,12 @@ describe("toggleTodo", () => {
     toggleTodo(SAMPLE, TODO_A.id);
     expect(SAMPLE).toEqual(original);
   });
+
+  it("같은 id를 두 번 토글하면 원래 상태로 돌아온다", () => {
+    const once = toggleTodo(SAMPLE, TODO_A.id);
+    const twice = toggleTodo(once, TODO_A.id);
+    expect(twice.find((t) => t.id === TODO_A.id)?.done).toBe(TODO_A.done);
+  });
 });
 
 // ──────────────────────────────────────────────
@@ -116,6 +128,12 @@ describe("removeTodo", () => {
     const result = removeTodo([], 1);
     expect(result).toEqual([]);
   });
+
+  it("원본 배열을 변경하지 않는다 (불변성)", () => {
+    const original = structuredClone(SAMPLE);
+    removeTodo(SAMPLE, TODO_A.id);
+    expect(SAMPLE).toEqual(original);
+  });
 });
 
 // ──────────────────────────────────────────────
@@ -141,6 +159,12 @@ describe("clearDoneTodos", () => {
   it("완료 항목이 없으면 배열을 그대로 반환한다", () => {
     const noDone = SAMPLE.map((t) => ({ ...t, done: false }));
     expect(clearDoneTodos(noDone)).toHaveLength(noDone.length);
+  });
+
+  it("원본 배열을 변경하지 않는다 (불변성)", () => {
+    const original = structuredClone(SAMPLE);
+    clearDoneTodos(SAMPLE);
+    expect(SAMPLE).toEqual(original);
   });
 });
 
@@ -168,6 +192,23 @@ describe("filterTodos", () => {
     expect(filterTodos([], "active")).toEqual([]);
     expect(filterTodos([], "done")).toEqual([]);
     expect(filterTodos([], "all")).toEqual([]);
+  });
+
+  it("모두 미완료일 때 active는 전체, done은 빈 배열을 반환한다", () => {
+    const allActive = SAMPLE.map((t) => ({ ...t, done: false }));
+    expect(filterTodos(allActive, "active")).toHaveLength(allActive.length);
+    expect(filterTodos(allActive, "done")).toHaveLength(0);
+  });
+
+  it("모두 완료일 때 done은 전체, active는 빈 배열을 반환한다", () => {
+    const allDone = SAMPLE.map((t) => ({ ...t, done: true }));
+    expect(filterTodos(allDone, "done")).toHaveLength(allDone.length);
+    expect(filterTodos(allDone, "active")).toHaveLength(0);
+  });
+
+  it("결과 항목의 순서는 원본 배열 순서를 유지한다", () => {
+    const result = filterTodos(SAMPLE, "all");
+    expect(result.map((t) => t.id)).toEqual(SAMPLE.map((t) => t.id));
   });
 });
 
@@ -201,5 +242,24 @@ describe("getDoneCount", () => {
 
   it("빈 배열이면 0을 반환한다", () => {
     expect(getDoneCount([])).toBe(0);
+  });
+});
+
+// ──────────────────────────────────────────────
+// getActiveCount + getDoneCount 관계
+// ──────────────────────────────────────────────
+describe("getActiveCount + getDoneCount", () => {
+  it("active + done 합계는 항상 전체 개수와 같다", () => {
+    expect(getActiveCount(SAMPLE) + getDoneCount(SAMPLE)).toBe(SAMPLE.length);
+  });
+
+  it("빈 배열에서 합계는 0이다", () => {
+    expect(getActiveCount([]) + getDoneCount([])).toBe(0);
+  });
+
+  it("모두 완료이면 active=0, done=전체", () => {
+    const allDone = SAMPLE.map((t) => ({ ...t, done: true }));
+    expect(getActiveCount(allDone)).toBe(0);
+    expect(getDoneCount(allDone)).toBe(allDone.length);
   });
 });

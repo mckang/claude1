@@ -9,7 +9,8 @@ export type Filter = "all" | "active" | "done";
 export function addTodo(todos: Todo[], text: string): Todo[] {
   const trimmed = text.trim();
   if (!trimmed) return todos;
-  return [...todos, { id: Date.now(), text: trimmed, done: false }];
+  const id = todos.length > 0 ? Math.max(...todos.map((t) => t.id)) + 1 : Date.now();
+  return [...todos, { id, text: trimmed, done: false }];
 }
 
 export function toggleTodo(todos: Todo[], id: number): Todo[] {
