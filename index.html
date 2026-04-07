@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Todo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f4f5f7;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+  }
+  .app {
+    width: 100%;
+    max-width: 480px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    padding: 24px;
+  }
+  h1 { font-size: 22px; margin-bottom: 16px; color: #222; }
+  .input-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  input[type="text"] {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+  }
+  input[type="text"]:focus { border-color: #4a90e2; }
+  button {
+    padding: 10px 16px;
+    border: none;
+    background: #4a90e2;
+    color: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  button:hover { background: #357ab8; }
+  .filters { display: flex; gap: 8px; margin-bottom: 12px; }
+  .filters button {
+    background: #eee;
+    color: #555;
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  .filters button.active { background: #4a90e2; color: #fff; }
+  ul { list-style: none; }
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 8px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  li.done span { text-decoration: line-through; color: #aaa; }
+  li span { flex: 1; font-size: 14px; word-break: break-word; }
+  li .del {
+    background: transparent;
+    color: #c00;
+    padding: 4px 8px;
+    font-size: 18px;
+  }
+  li .del:hover { background: #fee; }
+  .footer {
+    margin-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #888;
+  }
+  .footer button {
+    background: transparent;
+    color: #888;
+    padding: 0;
+    font-size: 12px;
+  }
+  .footer button:hover { color: #c00; background: transparent; }
+  .empty { text-align: center; color: #aaa; padding: 20px; font-size: 13px; }
+</style>
+</head>
+<body>
+  <div class="app">
+    <h1>📝 Todo</h1>
+    <div class="input-row">
+      <input id="todo-input" type="text" placeholder="할 일을 입력하세요..." />
+      <button id="add-btn">추가</button>
+    </div>
+    <div class="filters">
+      <button data-filter="all" class="active">전체</button>
+      <button data-filter="active">진행중</button>
+      <button data-filter="done">완료</button>
+    </div>
+    <ul id="todo-list"></ul>
+    <div class="footer">
+      <span id="count">0개 남음</span>
+      <button id="clear-done">완료 항목 삭제</button>
+    </div>
+  </div>
+
+<script>
+  const STORAGE_KEY = "todos.v1";
+  let todos = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  let filter = "all";
+
+  const $input = document.getElementById("todo-input");
+  const $list = document.getElementById("todo-list");
+  const $count = document.getElementById("count");
+
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+  }
+
+  function render() {
+    const filtered = todos.filter(t =>
+      filter === "all" ? true : filter === "done" ? t.done : !t.done
+    );
+    $list.innerHTML = "";
+    if (filtered.length === 0) {
+      const li = document.createElement("li");
+      li.className = "empty";
+      li.textContent = "할 일이 없습니다";
+      $list.appendChild(li);
+    } else {
+      filtered.forEach(t => {
+        const li = document.createElement("li");
+        if (t.done) li.classList.add("done");
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = t.done;
+        cb.addEventListener("change", () => {
+          t.done = cb.checked;
+          save();
+          render();
+        });
+
+        const span = document.createElement("span");
+        span.textContent = t.text;
+
+        const del = document.createElement("button");
+        del.className = "del";
+        del.textContent = "×";
+        del.addEventListener("click", () => {
+          todos = todos.filter(x => x.id !== t.id);
+          save();
+          render();
+        });
+
+        li.append(cb, span, del);
+        $list.appendChild(li);
+      });
+    }
+    const remaining = todos.filter(t => !t.done).length;
+    $count.textContent = `${remaining}개 남음`;
+  }
+
+  function add() {
+    const text = $input.value.trim();
+    if (!text) return;
+    todos.push({ id: Date.now(), text, done: false });
+    $input.value = "";
+    save();
+    render();
+  }
+
+  document.getElementById("add-btn").addEventListener("click", add);
+  $input.addEventListener("keydown", e => { if (e.key === "Enter") add(); });
+
+  document.querySelectorAll(".filters button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      filter = btn.dataset.filter;
+      document.querySelectorAll(".filters button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      render();
+    });
+  });
+
+  document.getElementById("clear-done").addEventListener("click", () => {
+    todos = todos.filter(t => !t.done);
+    save();
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>
