@@ -27,10 +27,10 @@ npx vitest run src/lib/todo-utils.test.ts  # 단일 파일 테스트
 
 | 항목 | 내용 |
 |---|---|
-| 버전 목표 | v2.0 |
-| 현재 브랜치 | `feature/todo-status-kanban` |
+| 버전 목표 | v2.1 (PWA) — v2.0 완료 |
+| 현재 브랜치 | `feature/pwa-support` |
 | 완료된 스프린트 | Sprint 1 (Epic 1), Sprint 2 (Epic 2), Sprint 3 (Epic 3), Sprint S (Epic S) |
-| 스프린트 진행률 | Sprint S — 8 / 8 태스크 완료 |
+| 진행 중 스프린트 | Sprint M (Epic M — PWA 모바일 지원) |
 
 ### Sprint S 완료 현황
 

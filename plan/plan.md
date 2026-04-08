@@ -129,6 +129,23 @@
 | Sprint S | [Epic S — 투두 상태 관리 & 칸반 보드](epic-todo-status.md) | ✅ 완료 | 8 / 8 |
 | Sprint 4 | [Epic 4 — 아이젠하워 매트릭스 뷰](epic4-matrix-view.md) | 🔲 대기 | — |
 | Sprint 5 | Epic 5 — Google Calendar 연동 | 🔲 대기 | — |
+| Sprint M | Epic M — PWA 모바일 지원 (v2.1) | 🚧 진행 중 | — |
+
+---
+
+## v2.1 — Epic M: PWA 모바일 지원
+
+기존 Next.js 앱에 manifest + 서비스 워커 + 아이콘을 얹어 홈 화면 설치 가능한 PWA로 만든다. 오프라인은 앱 셸 캐싱(정적 자산)만 지원.
+
+| ID | 스토리/태스크 | 완료 기준 |
+|---|---|---|
+| EM-T1 | `@ducanh2912/next-pwa` 설치 및 `next.config.ts` 래핑 | dev/GitHub Pages 빌드에서는 비활성화 |
+| EM-T2 | `public/manifest.webmanifest` 작성 | name, icons, display:standalone |
+| EM-T3 | PWA 아이콘 세트(192/512/maskable/apple) | `public/icons/*` |
+| EM-T4 | `layout.tsx` metadata: manifest, themeColor, appleWebApp, viewport-fit | Lighthouse installable 통과 |
+| EM-S1 | iOS safe-area 패딩 (notch 대응) | `env(safe-area-inset-*)` 적용 |
+| EM-S2 | "앱으로 설치" 버튼 (`beforeinstallprompt` UX) | Android Chrome 설치 동작 |
+| EM-T5 | Lighthouse PWA 감사 통과 | installable + manifest + SW |
 
 ---
 
