@@ -149,4 +149,4 @@
 | 2 | 마크다운·첨부 지원 (F-04) | Supabase Storage 설정 필요 |
 | 3 | 마감일·긴급도·중요도 (F-05, F-06) | DB 마이그레이션 필요 |
 | 4 | 매트릭스 뷰 (F-07) | 단계 3 완료 후 |
-| 5 | Google Calendar 연동 (F-11) | OAuth scope 확장 + Pub/Sub 웹훅 |
+| 5 | ~~Google Calendar 연동 (F-11)~~ | **v2.1로 연기** — OAuth scope 확장 + Pub/Sub 웹훅 |

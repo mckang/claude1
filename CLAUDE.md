@@ -30,7 +30,8 @@ npx vitest run src/lib/todo-utils.test.ts  # 단일 파일 테스트
 | 버전 목표 | v2.0 |
 | 현재 브랜치 | `feature/epic4-matrix-view` |
 | 완료된 스프린트 | Sprint 1 (Epic 1), Sprint 2 (Epic 2), Sprint 3 (Epic 3), Sprint S (Epic S), Sprint 4 (Epic 4) |
-| 스프린트 진행률 | Sprint 4 — 5 / 5 태스크 완료 |
+| 스프린트 진행률 | Sprint 4 — 5 / 5 태스크 완료 (**v2.0 범위 종료**) |
+| 다음 버전 | v2.1 — Epic 5 (Google Calendar 연동) 연기 |
 
 ### Sprint 4 진행 현황
 

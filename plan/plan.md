@@ -99,8 +99,9 @@
 
 ---
 
-### Epic 5 — Google Calendar 양방향 연동
+### Epic 5 — Google Calendar 양방향 연동 *(v2.1로 연기)*
 
+> **다음 버전(v2.1)으로 계획 변경.** v2.0 범위에서는 제외.
 > Google OAuth 사용자 전용. 마감일이 있는 투두를 캘린더와 동기화.
 
 | ID | 스토리 | 완료 기준 |
@@ -128,7 +129,9 @@
 | Sprint 3 | [Epic 3 — 마감일·긴급도·중요도](epic3-deadline-priority.md) | ✅ 완료 | 7 / 7 |
 | Sprint S | [Epic S — 투두 상태 관리 & 칸반 보드](epic-todo-status.md) | ✅ 완료 | 8 / 8 |
 | Sprint 4 | [Epic 4 — 아이젠하워 매트릭스 뷰](epic4-matrix-view.md) | ✅ 완료 | 5 / 5 |
-| Sprint 5 | Epic 5 — Google Calendar 연동 | 🔲 대기 | — |
+| ~~Sprint 5~~ | ~~Epic 5 — Google Calendar 연동~~ | ⏭️ v2.1로 연기 | — |
+
+> **v2.0 범위 종료.** Epic 5(Google Calendar 연동)는 v2.1에서 진행 예정.
 
 ---
 
