@@ -127,7 +127,7 @@
 | Sprint 2 | [Epic 2 — 마크다운 & 첨부 파일](epic2-markdown-attachments.md) | ✅ 완료 | 10 / 10 |
 | Sprint 3 | [Epic 3 — 마감일·긴급도·중요도](epic3-deadline-priority.md) | ✅ 완료 | 7 / 7 |
 | Sprint S | [Epic S — 투두 상태 관리 & 칸반 보드](epic-todo-status.md) | ✅ 완료 | 8 / 8 |
-| Sprint 4 | [Epic 4 — 아이젠하워 매트릭스 뷰](epic4-matrix-view.md) | 🔲 대기 | — |
+| Sprint 4 | [Epic 4 — 아이젠하워 매트릭스 뷰](epic4-matrix-view.md) | ✅ 완료 | 5 / 5 |
 | Sprint 5 | Epic 5 — Google Calendar 연동 | 🔲 대기 | — |
 
 ---
