@@ -1,23 +1,39 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   addTodo,
-  toggleTodo,
+  setTodoStatus,
   removeTodo,
   clearDoneTodos,
   filterTodos,
   getActiveCount,
   getDoneCount,
+  updateTodoText,
+  statusLabel,
+  statusColor,
+  isOverdue,
+  formatDueDate,
+  urgencyLabel,
+  importanceLabel,
+  urgencyColor,
+  importanceColor,
   type Todo,
+  type TodoStatus,
 } from "./todo-utils";
 
 // 테스트용 픽스처
 function makeTodo(overrides: Partial<Todo> & { id: number; text: string }): Todo {
-  return { done: false, ...overrides };
+  return {
+    status: "waiting",
+    due_date: null,
+    urgency: null,
+    importance: null,
+    ...overrides,
+  };
 }
 
-const TODO_A = makeTodo({ id: 1, text: "운동하기" });
-const TODO_B = makeTodo({ id: 2, text: "독서하기", done: true });
-const TODO_C = makeTodo({ id: 3, text: "코딩하기" });
+const TODO_A = makeTodo({ id: 1, text: "운동하기", status: "waiting" });
+const TODO_B = makeTodo({ id: 2, text: "독서하기", status: "done" });
+const TODO_C = makeTodo({ id: 3, text: "코딩하기", status: "active" });
 
 const SAMPLE: Todo[] = [TODO_A, TODO_B, TODO_C];
 
@@ -29,12 +45,17 @@ describe("addTodo", () => {
     const result = addTodo(SAMPLE, "새 항목");
     expect(result).toHaveLength(4);
     expect(result[3].text).toBe("새 항목");
-    expect(result[3].done).toBe(false);
+    expect(result[3].status).toBe("waiting");
   });
 
   it("새로 추가된 항목은 숫자 id를 가진다", () => {
     const result = addTodo([], "할 일");
     expect(typeof result[0].id).toBe("number");
+  });
+
+  it("새로 추가된 항목의 초기 상태는 'waiting'이다", () => {
+    const result = addTodo([], "할 일");
+    expect(result[0].status).toBe("waiting");
   });
 
   it("빈 문자열은 추가하지 않는다", () => {
@@ -66,40 +87,36 @@ describe("addTodo", () => {
 });
 
 // ──────────────────────────────────────────────
-// toggleTodo
+// setTodoStatus
 // ──────────────────────────────────────────────
-describe("toggleTodo", () => {
-  it("미완료 항목을 완료로 전환한다", () => {
-    const result = toggleTodo(SAMPLE, TODO_A.id);
-    expect(result.find((t) => t.id === TODO_A.id)?.done).toBe(true);
-  });
+describe("setTodoStatus", () => {
+  const STATUSES: TodoStatus[] = ["waiting", "active", "paused", "done"];
 
-  it("완료 항목을 미완료로 전환한다", () => {
-    const result = toggleTodo(SAMPLE, TODO_B.id);
-    expect(result.find((t) => t.id === TODO_B.id)?.done).toBe(false);
+  it("각 상태 전이 4×4 케이스 모두 성공한다", () => {
+    for (const from of STATUSES) {
+      for (const to of STATUSES) {
+        const initial: Todo[] = [makeTodo({ id: 1, text: "t", status: from })];
+        const result = setTodoStatus(initial, 1, to);
+        expect(result[0].status).toBe(to);
+      }
+    }
   });
 
   it("대상 id 외의 항목은 변경하지 않는다", () => {
-    const result = toggleTodo(SAMPLE, TODO_A.id);
-    expect(result.find((t) => t.id === TODO_B.id)?.done).toBe(TODO_B.done);
-    expect(result.find((t) => t.id === TODO_C.id)?.done).toBe(TODO_C.done);
+    const result = setTodoStatus(SAMPLE, TODO_A.id, "done");
+    expect(result.find((t) => t.id === TODO_B.id)?.status).toBe(TODO_B.status);
+    expect(result.find((t) => t.id === TODO_C.id)?.status).toBe(TODO_C.status);
   });
 
   it("존재하지 않는 id에 대해 배열을 그대로 반환한다", () => {
-    const result = toggleTodo(SAMPLE, 999);
+    const result = setTodoStatus(SAMPLE, 999, "done");
     expect(result).toEqual(SAMPLE);
   });
 
   it("원본 배열을 변경하지 않는다 (불변성)", () => {
     const original = structuredClone(SAMPLE);
-    toggleTodo(SAMPLE, TODO_A.id);
+    setTodoStatus(SAMPLE, TODO_A.id, "done");
     expect(SAMPLE).toEqual(original);
-  });
-
-  it("같은 id를 두 번 토글하면 원래 상태로 돌아온다", () => {
-    const once = toggleTodo(SAMPLE, TODO_A.id);
-    const twice = toggleTodo(once, TODO_A.id);
-    expect(twice.find((t) => t.id === TODO_A.id)?.done).toBe(TODO_A.done);
   });
 });
 
@@ -140,24 +157,30 @@ describe("removeTodo", () => {
 // clearDoneTodos
 // ──────────────────────────────────────────────
 describe("clearDoneTodos", () => {
-  it("완료된 항목을 모두 제거한다", () => {
+  it("'done' 상태 항목을 모두 제거한다", () => {
     const result = clearDoneTodos(SAMPLE);
-    expect(result.every((t) => !t.done)).toBe(true);
+    expect(result.every((t) => t.status !== "done")).toBe(true);
   });
 
-  it("미완료 항목은 유지한다", () => {
-    const result = clearDoneTodos(SAMPLE);
-    expect(result.find((t) => t.id === TODO_A.id)).toBeDefined();
-    expect(result.find((t) => t.id === TODO_C.id)).toBeDefined();
+  it("'done'이 아닌 항목은 유지한다 (waiting/active/paused 모두)", () => {
+    const mixed: Todo[] = [
+      makeTodo({ id: 1, text: "a", status: "waiting" }),
+      makeTodo({ id: 2, text: "b", status: "active" }),
+      makeTodo({ id: 3, text: "c", status: "paused" }),
+      makeTodo({ id: 4, text: "d", status: "done" }),
+    ];
+    const result = clearDoneTodos(mixed);
+    expect(result).toHaveLength(3);
+    expect(result.map((t) => t.id)).toEqual([1, 2, 3]);
   });
 
-  it("완료 항목만 있을 경우 빈 배열을 반환한다", () => {
-    const allDone = SAMPLE.map((t) => ({ ...t, done: true }));
+  it("모두 done일 경우 빈 배열을 반환한다", () => {
+    const allDone = SAMPLE.map((t) => ({ ...t, status: "done" as TodoStatus }));
     expect(clearDoneTodos(allDone)).toEqual([]);
   });
 
-  it("완료 항목이 없으면 배열을 그대로 반환한다", () => {
-    const noDone = SAMPLE.map((t) => ({ ...t, done: false }));
+  it("done이 없으면 배열을 그대로 반환한다", () => {
+    const noDone = SAMPLE.map((t) => ({ ...t, status: "active" as TodoStatus }));
     expect(clearDoneTodos(noDone)).toHaveLength(noDone.length);
   });
 
@@ -172,43 +195,53 @@ describe("clearDoneTodos", () => {
 // filterTodos
 // ──────────────────────────────────────────────
 describe("filterTodos", () => {
+  const MIXED: Todo[] = [
+    makeTodo({ id: 1, text: "w", status: "waiting" }),
+    makeTodo({ id: 2, text: "a", status: "active" }),
+    makeTodo({ id: 3, text: "p", status: "paused" }),
+    makeTodo({ id: 4, text: "d", status: "done" }),
+    makeTodo({ id: 5, text: "w2", status: "waiting" }),
+  ];
+
   it('"all" 필터는 전체 항목을 반환한다', () => {
-    expect(filterTodos(SAMPLE, "all")).toHaveLength(SAMPLE.length);
+    expect(filterTodos(MIXED, "all")).toHaveLength(MIXED.length);
   });
 
-  it('"active" 필터는 미완료 항목만 반환한다', () => {
-    const result = filterTodos(SAMPLE, "active");
-    expect(result.every((t) => !t.done)).toBe(true);
+  it('"waiting" 필터는 대기 항목만 반환한다', () => {
+    const result = filterTodos(MIXED, "waiting");
     expect(result).toHaveLength(2);
+    expect(result.every((t) => t.status === "waiting")).toBe(true);
+  });
+
+  it('"active" 필터는 진행 항목만 반환한다', () => {
+    const result = filterTodos(MIXED, "active");
+    expect(result).toHaveLength(1);
+    expect(result[0].status).toBe("active");
+  });
+
+  it('"paused" 필터는 일시중지 항목만 반환한다', () => {
+    const result = filterTodos(MIXED, "paused");
+    expect(result).toHaveLength(1);
+    expect(result[0].status).toBe("paused");
   });
 
   it('"done" 필터는 완료 항목만 반환한다', () => {
-    const result = filterTodos(SAMPLE, "done");
-    expect(result.every((t) => t.done)).toBe(true);
+    const result = filterTodos(MIXED, "done");
     expect(result).toHaveLength(1);
+    expect(result[0].status).toBe("done");
   });
 
   it("빈 배열에서 필터링하면 빈 배열을 반환한다", () => {
     expect(filterTodos([], "active")).toEqual([]);
     expect(filterTodos([], "done")).toEqual([]);
     expect(filterTodos([], "all")).toEqual([]);
-  });
-
-  it("모두 미완료일 때 active는 전체, done은 빈 배열을 반환한다", () => {
-    const allActive = SAMPLE.map((t) => ({ ...t, done: false }));
-    expect(filterTodos(allActive, "active")).toHaveLength(allActive.length);
-    expect(filterTodos(allActive, "done")).toHaveLength(0);
-  });
-
-  it("모두 완료일 때 done은 전체, active는 빈 배열을 반환한다", () => {
-    const allDone = SAMPLE.map((t) => ({ ...t, done: true }));
-    expect(filterTodos(allDone, "done")).toHaveLength(allDone.length);
-    expect(filterTodos(allDone, "active")).toHaveLength(0);
+    expect(filterTodos([], "waiting")).toEqual([]);
+    expect(filterTodos([], "paused")).toEqual([]);
   });
 
   it("결과 항목의 순서는 원본 배열 순서를 유지한다", () => {
-    const result = filterTodos(SAMPLE, "all");
-    expect(result.map((t) => t.id)).toEqual(SAMPLE.map((t) => t.id));
+    const result = filterTodos(MIXED, "all");
+    expect(result.map((t) => t.id)).toEqual(MIXED.map((t) => t.id));
   });
 });
 
@@ -216,12 +249,13 @@ describe("filterTodos", () => {
 // getActiveCount / getDoneCount
 // ──────────────────────────────────────────────
 describe("getActiveCount", () => {
-  it("미완료 항목 수를 반환한다", () => {
+  it("'done'이 아닌 항목 수를 반환한다", () => {
+    // SAMPLE: waiting, done, active → active(카운트) = 2
     expect(getActiveCount(SAMPLE)).toBe(2);
   });
 
-  it("모두 완료이면 0을 반환한다", () => {
-    const allDone = SAMPLE.map((t) => ({ ...t, done: true }));
+  it("모두 done이면 0을 반환한다", () => {
+    const allDone = SAMPLE.map((t) => ({ ...t, status: "done" as TodoStatus }));
     expect(getActiveCount(allDone)).toBe(0);
   });
 
@@ -231,17 +265,229 @@ describe("getActiveCount", () => {
 });
 
 describe("getDoneCount", () => {
-  it("완료 항목 수를 반환한다", () => {
+  it("'done' 상태 항목 수를 반환한다", () => {
     expect(getDoneCount(SAMPLE)).toBe(1);
   });
 
-  it("모두 미완료이면 0을 반환한다", () => {
-    const noDone = SAMPLE.map((t) => ({ ...t, done: false }));
+  it("모두 done이 아니면 0을 반환한다", () => {
+    const noDone = SAMPLE.map((t) => ({ ...t, status: "active" as TodoStatus }));
     expect(getDoneCount(noDone)).toBe(0);
   });
 
   it("빈 배열이면 0을 반환한다", () => {
     expect(getDoneCount([])).toBe(0);
+  });
+});
+
+// ──────────────────────────────────────────────
+// updateTodoText
+// ──────────────────────────────────────────────
+describe("updateTodoText", () => {
+  it("해당 id의 텍스트를 새 텍스트로 변경한다", () => {
+    const result = updateTodoText(SAMPLE, TODO_A.id, "수정된 텍스트");
+    expect(result.find((t) => t.id === TODO_A.id)?.text).toBe("수정된 텍스트");
+  });
+
+  it("앞뒤 공백을 제거하여 저장한다", () => {
+    const result = updateTodoText(SAMPLE, TODO_A.id, "  공백 제거  ");
+    expect(result.find((t) => t.id === TODO_A.id)?.text).toBe("공백 제거");
+  });
+
+  it("빈 문자열이면 배열을 그대로 반환한다", () => {
+    const result = updateTodoText(SAMPLE, TODO_A.id, "");
+    expect(result).toEqual(SAMPLE);
+  });
+
+  it("공백만 있는 문자열이면 배열을 그대로 반환한다", () => {
+    const result = updateTodoText(SAMPLE, TODO_A.id, "   ");
+    expect(result).toEqual(SAMPLE);
+  });
+
+  it("대상 id 외의 항목은 변경하지 않는다", () => {
+    const result = updateTodoText(SAMPLE, TODO_A.id, "변경");
+    expect(result.find((t) => t.id === TODO_B.id)?.text).toBe(TODO_B.text);
+    expect(result.find((t) => t.id === TODO_C.id)?.text).toBe(TODO_C.text);
+  });
+
+  it("존재하지 않는 id는 배열을 그대로 반환한다", () => {
+    const result = updateTodoText(SAMPLE, 999, "변경");
+    expect(result).toEqual(SAMPLE);
+  });
+
+  it("status는 변경하지 않는다", () => {
+    const result = updateTodoText(SAMPLE, TODO_B.id, "수정");
+    expect(result.find((t) => t.id === TODO_B.id)?.status).toBe("done");
+  });
+
+  it("원본 배열을 변경하지 않는다 (불변성)", () => {
+    const original = structuredClone(SAMPLE);
+    updateTodoText(SAMPLE, TODO_A.id, "변경");
+    expect(SAMPLE).toEqual(original);
+  });
+});
+
+// ──────────────────────────────────────────────
+// statusLabel / statusColor
+// ──────────────────────────────────────────────
+describe("statusLabel", () => {
+  it("waiting → '대기'", () => {
+    expect(statusLabel("waiting")).toBe("대기");
+  });
+  it("active → '진행'", () => {
+    expect(statusLabel("active")).toBe("진행");
+  });
+  it("paused → '중지'", () => {
+    expect(statusLabel("paused")).toBe("중지");
+  });
+  it("done → '종료'", () => {
+    expect(statusLabel("done")).toBe("종료");
+  });
+});
+
+describe("statusColor", () => {
+  it("waiting은 zinc 클래스를 반환한다", () => {
+    expect(statusColor("waiting")).toBe("bg-zinc-100 text-zinc-600");
+  });
+  it("active는 blue 클래스를 반환한다", () => {
+    expect(statusColor("active")).toBe("bg-blue-100 text-blue-700");
+  });
+  it("paused는 amber 클래스를 반환한다", () => {
+    expect(statusColor("paused")).toBe("bg-amber-100 text-amber-700");
+  });
+  it("done은 green 클래스를 반환한다", () => {
+    expect(statusColor("done")).toBe("bg-green-100 text-green-700");
+  });
+});
+
+// ──────────────────────────────────────────────
+// isOverdue
+// ──────────────────────────────────────────────
+describe("isOverdue", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-08"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("null이면 false를 반환한다", () => {
+    expect(isOverdue(null)).toBe(false);
+  });
+
+  it("오늘 날짜이면 false를 반환한다", () => {
+    expect(isOverdue("2026-04-08")).toBe(false);
+  });
+
+  it("어제 날짜이면 true를 반환한다", () => {
+    expect(isOverdue("2026-04-07")).toBe(true);
+  });
+
+  it("내일 날짜이면 false를 반환한다", () => {
+    expect(isOverdue("2026-04-09")).toBe(false);
+  });
+
+  it("훨씬 이전 날짜이면 true를 반환한다", () => {
+    expect(isOverdue("2025-01-01")).toBe(true);
+  });
+});
+
+// ──────────────────────────────────────────────
+// formatDueDate
+// ──────────────────────────────────────────────
+describe("formatDueDate", () => {
+  it("null이면 빈 문자열을 반환한다", () => {
+    expect(formatDueDate(null)).toBe("");
+  });
+
+  it("'YYYY-MM-DD' 형식을 'M월 D일'로 변환한다", () => {
+    expect(formatDueDate("2026-04-08")).toBe("4월 8일");
+  });
+
+  it("앞자리 0을 제거한다 (01월 → 1월)", () => {
+    expect(formatDueDate("2026-01-05")).toBe("1월 5일");
+  });
+
+  it("12월 31일을 올바르게 변환한다", () => {
+    expect(formatDueDate("2026-12-31")).toBe("12월 31일");
+  });
+});
+
+// ──────────────────────────────────────────────
+// urgencyLabel / importanceLabel
+// ──────────────────────────────────────────────
+describe("urgencyLabel", () => {
+  it("null이면 빈 문자열을 반환한다", () => {
+    expect(urgencyLabel(null)).toBe("");
+  });
+
+  it("1은 '낮음'을 반환한다", () => {
+    expect(urgencyLabel(1)).toBe("낮음");
+  });
+
+  it("2는 '보통'을 반환한다", () => {
+    expect(urgencyLabel(2)).toBe("보통");
+  });
+
+  it("3은 '높음'을 반환한다", () => {
+    expect(urgencyLabel(3)).toBe("높음");
+  });
+});
+
+describe("importanceLabel", () => {
+  it("null이면 빈 문자열을 반환한다", () => {
+    expect(importanceLabel(null)).toBe("");
+  });
+
+  it("1은 '낮음'을 반환한다", () => {
+    expect(importanceLabel(1)).toBe("낮음");
+  });
+
+  it("2는 '보통'을 반환한다", () => {
+    expect(importanceLabel(2)).toBe("보통");
+  });
+
+  it("3은 '높음'을 반환한다", () => {
+    expect(importanceLabel(3)).toBe("높음");
+  });
+});
+
+// ──────────────────────────────────────────────
+// urgencyColor / importanceColor
+// ──────────────────────────────────────────────
+describe("urgencyColor", () => {
+  it("null이면 빈 문자열을 반환한다", () => {
+    expect(urgencyColor(null)).toBe("");
+  });
+
+  it("1(낮음)은 green 클래스를 반환한다", () => {
+    expect(urgencyColor(1)).toContain("green");
+  });
+
+  it("2(보통)은 yellow 클래스를 반환한다", () => {
+    expect(urgencyColor(2)).toContain("yellow");
+  });
+
+  it("3(높음)은 red 클래스를 반환한다", () => {
+    expect(urgencyColor(3)).toContain("red");
+  });
+});
+
+describe("importanceColor", () => {
+  it("null이면 빈 문자열을 반환한다", () => {
+    expect(importanceColor(null)).toBe("");
+  });
+
+  it("1(낮음)은 gray 클래스를 반환한다", () => {
+    expect(importanceColor(1)).toContain("gray");
+  });
+
+  it("2(보통)은 blue 클래스를 반환한다", () => {
+    expect(importanceColor(2)).toContain("blue");
+  });
+
+  it("3(높음)은 purple 클래스를 반환한다", () => {
+    expect(importanceColor(3)).toContain("purple");
   });
 });
 
@@ -257,8 +503,8 @@ describe("getActiveCount + getDoneCount", () => {
     expect(getActiveCount([]) + getDoneCount([])).toBe(0);
   });
 
-  it("모두 완료이면 active=0, done=전체", () => {
-    const allDone = SAMPLE.map((t) => ({ ...t, done: true }));
+  it("모두 done이면 active=0, done=전체", () => {
+    const allDone = SAMPLE.map((t) => ({ ...t, status: "done" as TodoStatus }));
     expect(getActiveCount(allDone)).toBe(0);
     expect(getDoneCount(allDone)).toBe(allDone.length);
   });

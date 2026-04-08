@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npx eslint:*)",
+      "mcp__plugin_supabase_supabase__list_migrations",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(grep -r \"CREATE TABLE\\\\|ALTER TABLE\\\\|done\\\\|status\" /Users/nhn/workspace/claude_prac/prac1 --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.sql\" --include=\"*.json\" ! -path \"*/node_modules/*\")"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"[CLAUDE.md 업데이트 확인] 이번 작업에서 태스크 또는 스토리를 완료했다면, CLAUDE.md의 현재 개발 상태 섹션(브랜치, 완료 스프린트, 진행률, 태스크 테이블)을 업데이트했는지 반드시 확인하세요.\"}}'",
+            "statusMessage": "CLAUDE.md 상태 확인 중..."
+          }
+        ]
+      }
+    ]
+  }
+}
