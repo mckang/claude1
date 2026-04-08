@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { InstallPrompt } from "@/components/install-prompt"
 import {
   Dialog,
   DialogContent,
@@ -212,6 +213,7 @@ export function TodoApp({ userEmail, userId }: { userEmail: string; userId: stri
 
       {/* 하단: 완료 삭제 + 사용자 정보 */}
       <div className="mt-auto flex flex-col gap-1">
+        <InstallPrompt />
         {doneCount > 0 && (
           <button
             onClick={handleClearDone}
