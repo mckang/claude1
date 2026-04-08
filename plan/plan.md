@@ -25,7 +25,7 @@
 
 | ID | 스토리 | 완료 기준 |
 |---|---|---|
-| E1-S1 | 투두 텍스트를 더블클릭하면 인라인 편집 모드로 진입한다 | 편집 input 포커스 |
+| E1-S1 | 호버 시 노출되는 연필 아이콘 버튼을 클릭하면 인라인 편집 모드로 진입한다 | 편집 input 포커스 |
 | E1-S2 | Enter 또는 blur 시 변경 내용이 저장된다 | Supabase update + 낙관적 업데이트 |
 | E1-S3 | Escape 키를 누르면 편집이 취소되고 원래 텍스트로 돌아간다 | 원문 복원 확인 |
 | E1-S4 | 빈 텍스트로 저장 시 경고 메시지를 표시하고 저장하지 않는다 | validation 처리 |
@@ -45,6 +45,7 @@
 | E2-S4 | 이미지 첨부 시 인라인 미리보기가 표시된다 | Signed URL 이미지 |
 | E2-S5 | 이미지 외 파일은 다운로드 링크로 표시된다 | Signed URL 링크 |
 | E2-S6 | 투두 삭제 시 첨부 파일도 Storage에서 삭제된다 | cascade 삭제 확인 |
+| E2-S7 | `+` 버튼 클릭 시 모달 입력창으로 투두 추가 | Dialog UI, 다중 줄 입력 |
 | E2-T1 | `todo_attachments` 테이블 마이그레이션 적용 | Supabase 스키마 반영 |
 | E2-T2 | `todo-attachments` Storage 버킷 생성 및 RLS 정책 설정 | private 버킷 |
 | E2-T3 | `/api/attachments` Route Handler 구현 (Signed URL 발급) | 서버 사이드 |
@@ -64,6 +65,23 @@
 | E3-S5 | 긴급도·중요도 미설정도 허용된다 (null) | 기본값 없음 |
 | E3-T1 | `todos` 테이블에 `due_date`, `urgency`, `importance` 컬럼 마이그레이션 | Supabase 반영 |
 | E3-T2 | `todo-utils.ts`에 긴급도·중요도 관련 유틸 함수 추가 및 테스트 | 테스트 통과 |
+
+---
+
+### Epic S — 투두 상태 관리 & 칸반 보드
+
+> Epic 4 이전 선행 작업. `done: boolean` → 4단계 상태(`waiting/active/paused/done`) 전환 및 칸반 보드 뷰 추가.
+
+| ID | 스토리 | 완료 기준 |
+|---|---|---|
+| ES-T1 | `todos` 테이블 `done` → `status` 마이그레이션 | Supabase 반영, 기존 데이터 유지 |
+| ES-T2 | `todo-utils.ts` 타입·함수 업데이트 및 테스트 | `TodoStatus` 타입, 관련 함수 전체, 테스트 통과 |
+| ES-S1 | 칸반 보드 뷰 전환 버튼 (리스트 ↔ 칸반) | 헤더 뷰 토글 버튼, 두 뷰 전환 동작 |
+| ES-S2 | 칸반 보드 4컬럼 렌더링 | 대기/진행/중지/종료 컬럼, 반응형 |
+| ES-S3 | 드래그&드롭 상태 전이 | @dnd-kit, Supabase 저장, 낙관적 업데이트 |
+| ES-S4 | 체크박스 → 종료 토글 (해제 시 → 대기) | 리스트 뷰 체크박스 동작 변경 |
+| ES-S5 | 사이드바 필터 5개로 확장 | 전체/대기/진행/중지/종료 필터 |
+| ES-S6 | 리스트 뷰 상태 Badge 표시 | 상태별 색상 Badge |
 
 ---
 
@@ -103,13 +121,14 @@
 
 ## 스프린트 현황
 
-| 스프린트 | 에픽 | 상태 |
-|---|---|---|
-| Sprint 1 | Epic 1 — 텍스트 인라인 편집 | 대기 |
-| Sprint 2 | Epic 2 — 마크다운 & 첨부 파일 | 대기 |
-| Sprint 3 | Epic 3 — 마감일·긴급도·중요도 | 대기 |
-| Sprint 4 | Epic 4 — 아이젠하워 매트릭스 뷰 | 대기 |
-| Sprint 5 | Epic 5 — Google Calendar 연동 | 대기 |
+| 스프린트 | 에픽 | 상태 | 진행률 |
+|---|---|---|---|
+| Sprint 1 | [Epic 1 — 텍스트 인라인 편집](epic1-inline-edit.md) | ✅ 완료 | 5 / 5 |
+| Sprint 2 | [Epic 2 — 마크다운 & 첨부 파일](epic2-markdown-attachments.md) | ✅ 완료 | 10 / 10 |
+| Sprint 3 | [Epic 3 — 마감일·긴급도·중요도](epic3-deadline-priority.md) | ✅ 완료 | 7 / 7 |
+| Sprint S | [Epic S — 투두 상태 관리 & 칸반 보드](epic-todo-status.md) | ✅ 완료 | 8 / 8 |
+| Sprint 4 | [Epic 4 — 아이젠하워 매트릭스 뷰](epic4-matrix-view.md) | 🔲 대기 | — |
+| Sprint 5 | Epic 5 — Google Calendar 연동 | 🔲 대기 | — |
 
 ---
 

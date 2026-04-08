@@ -32,19 +32,15 @@ src/
 │       ├── calendar/
 │       │   ├── events/route.ts      # Calendar 이벤트 생성·삭제
 │       │   └── webhook/route.ts     # Google Pub/Sub 웹훅 수신 (삭제 동기화)
-│       └── attachments/route.ts     # 첨부 파일 Signed URL 발급
+│       └── attachments/route.ts     # 첨부 파일 Signed URL 발급 / redirect
 ├── components/
-│   ├── todo-app.tsx            # 메인 Client Component (CRUD + 상태)
-│   ├── todo-item.tsx           # 투두 아이템 (인라인 편집, 마크다운, 뱃지)
-│   ├── todo-matrix.tsx         # 아이젠하워 매트릭스 뷰
-│   ├── todo-editor.tsx         # 마크다운 에디터 + 첨부 파일 업로드
+│   ├── todo-app.tsx            # 메인 Client Component (CRUD + 상태 + 모달)
 │   ├── auth-form.tsx           # 인증 폼 Client Component
 │   └── ui/                     # shadcn 원자 컴포넌트
 │       ├── button.tsx
-│       ├── input.tsx
 │       ├── checkbox.tsx
-│       ├── card.tsx
-│       └── badge.tsx
+│       ├── dialog.tsx
+│       └── ...
 ├── lib/
 │   ├── todo-utils.ts           # 순수 함수 비즈니스 로직
 │   ├── todo-utils.test.ts      # 단위 테스트
@@ -106,19 +102,40 @@ components/todo-app.tsx (Client Component)
 
 ## 4. 컴포넌트 계층
 
+모든 컴포넌트는 `todo-app.tsx` 단일 파일에 정의된다.
+
 ```
 app/page.tsx (Server)
 └── TodoApp (Client)
     ├── 사이드바
     │   ├── 진행 바
-    │   ├── StatCard × 3 (전체/진행 중/완료)
+    │   ├── StatCard × 2 (남은 일 / 완료)
     │   ├── 필터 버튼 × 3
     │   └── 완료 삭제 버튼
-    └── 메인
-        ├── 헤더 (이메일 + 로그아웃)
-        ├── 투두 목록
-        │   └── TodoItem × n (체크박스 + 텍스트 + 삭제)
-        └── 입력창 (고정 하단)
+    ├── 메인
+    │   ├── 헤더 (`+` 새 할 일 버튼)
+    │   └── 투두 목록
+    │       └── TodoItem × n
+    │           ├── Checkbox (완료 토글)
+    │           ├── 텍스트 영역 (클릭 → TodoDetailModal)
+    │           │   ├── 첨부 없음: 마크다운 최대 3줄 렌더링
+    │           │   └── 첨부 있음: 1줄 텍스트 + h-10 첨부 영역
+    │           ├── 연필 버튼 (클릭 → TodoFormModal edit)
+    │           ├── 삭제 버튼
+    │           ├── TodoDetailModal (상세 조회)
+    │           └── TodoFormModal mode="edit" (편집)
+    └── TodoFormModal mode="add" (새 할 일 추가)
+
+TodoFormModal (add / edit 공용)
+    ├── 편집 탭: textarea (Ctrl+Enter 저장)
+    ├── 미리보기 탭: MarkdownContent
+    └── 파일 첨부 영역
+        ├── 기존 첨부: 썸네일 + × 삭제 + (이미지) + 본문 삽입
+        └── 신규 첨부: PendingFilePreview
+
+TodoDetailModal
+    ├── MarkdownContent (전체 본문)
+    └── 첨부파일 목록 (이미지 → 새 탭, 그 외 → download)
 
 app/auth/page.tsx (Server)
 └── AuthForm (Client)
@@ -139,7 +156,8 @@ create table todos (
   id         bigserial primary key,
   user_id    uuid references auth.users not null,
   text       text not null,
-  done       boolean not null default false,
+  status     text not null default 'waiting'
+             check (status in ('waiting', 'active', 'paused', 'done')),
   created_at timestamptz default now()
 );
 
@@ -149,6 +167,9 @@ alter table todos
   add column urgency           smallint check (urgency between 1 and 3),   -- 1=낮음 2=보통 3=높음
   add column importance        smallint check (importance between 1 and 3), -- 1=낮음 2=보통 3=높음
   add column calendar_event_id text;  -- Google Calendar 이벤트 ID
+
+-- Epic S: done(boolean) → status(text) 전환 완료
+-- status: 'waiting'(대기) | 'active'(진행) | 'paused'(일시중지) | 'done'(완료)
 
 -- 첨부 파일 테이블 (v2)
 create table todo_attachments (
@@ -178,10 +199,21 @@ create policy "users can manage their own attachments" on todo_attachments
 
 | 버킷 | 접근 | 경로 규칙 | 용도 |
 |---|---|---|---|
-| `todo-attachments` | private | `{user_id}/{todo_id}/{filename}` | 투두 첨부 파일 |
+| `todo-attachments` | private | `{user_id}/{todo_id}/{timestamp}_{filename}` | 투두 첨부 파일 |
 
 - 파일 접근은 Signed URL (만료 1시간) 사용
-- 투두 삭제 시 연관 파일 Storage에서도 삭제 (cascade)
+- 투두 삭제 시 연관 Storage 파일도 삭제 (`handleRemove`에서 명시적 처리)
+- DB cascade로 `todo_attachments` 레코드 자동 삭제
+
+### `/api/attachments` Route Handler
+
+| 메서드 | 쿼리 파라미터 | 동작 |
+|---|---|---|
+| `GET` | `path` | Signed URL JSON 반환 |
+| `GET` | `path` + `redirect=true` | Signed URL로 302 redirect (마크다운 이미지 삽입용) |
+| `DELETE` | `path` | Storage 파일 삭제 |
+
+`redirect=true` 모드는 마크다운 본문에 `![name](/api/attachments?path=...&redirect=true)` 형태로 이미지를 삽입할 때 사용. 서버가 매 요청마다 새 Signed URL을 발급해 redirect하므로 URL 만료 문제가 없다.
 
 ### 낙관적 업데이트 패턴
 
