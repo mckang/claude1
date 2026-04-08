@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react"
-import { Plus, Trash2, ClipboardList, Menu, X, LogOut, Pencil, Paperclip, Loader2, FileText, FileImage, FileVideo, FileAudio, FileArchive, FileCode, FileSpreadsheet, File as FileIcon, List, Columns } from "lucide-react"
+import { Plus, Trash2, ClipboardList, Menu, X, LogOut, Pencil, Paperclip, Loader2, FileText, FileImage, FileVideo, FileAudio, FileArchive, FileCode, FileSpreadsheet, File as FileIcon, List, Columns, LayoutGrid } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { Button } from "@/components/ui/button"
@@ -33,6 +33,7 @@ import {
   statusLabel,
   statusColor,
 } from "@/lib/todo-utils"
+import { TodoMatrix } from "@/components/todo-matrix"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import {
@@ -77,7 +78,7 @@ export function TodoApp({ userEmail, userId }: { userEmail: string; userId: stri
   const [todos, setTodos] = useState<Todo[]>([])
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [filter, setFilter] = useState<Filter>("all")
-  const [view, setView] = useState<"list" | "kanban">("list")
+  const [view, setView] = useState<"list" | "kanban" | "matrix">("list")
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
@@ -311,6 +312,19 @@ export function TodoApp({ userEmail, userId }: { userEmail: string; userId: stri
                 >
                   <Columns className="h-3.5 w-3.5" />
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setView("matrix")}
+                  aria-label="매트릭스 뷰"
+                  aria-pressed={view === "matrix"}
+                  className={`flex h-7 w-7 items-center justify-center rounded transition-colors ${
+                    view === "matrix"
+                      ? "bg-zinc-800 text-zinc-100"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                </button>
               </div>
 
               {/* 할 일 추가 버튼 */}
@@ -329,7 +343,7 @@ export function TodoApp({ userEmail, userId }: { userEmail: string; userId: stri
 
         {/* 투두 목록 / 칸반 보드 */}
         <div className="flex-1 overflow-y-auto px-8 py-6">
-          {view === "list" ? (
+          {view === "list" && (
             filtered.length === 0 ? (
               <EmptyState filter={filter} />
             ) : (
@@ -347,7 +361,8 @@ export function TodoApp({ userEmail, userId }: { userEmail: string; userId: stri
                 ))}
               </ul>
             )
-          ) : (
+          )}
+          {view === "kanban" && (
             <KanbanBoard
               todos={filtered}
               filter={filter}
@@ -357,6 +372,26 @@ export function TodoApp({ userEmail, userId }: { userEmail: string; userId: stri
               onEdit={handleEdit}
               onStatusChange={handleStatusChange}
             />
+          )}
+          {view === "matrix" && (
+            filtered.length === 0 ? (
+              <EmptyState filter={filter} />
+            ) : (
+              <TodoMatrix
+                todos={filtered}
+                renderItem={(todo) => (
+                  <TodoItem
+                    key={todo.id}
+                    todo={todo}
+                    userId={userId}
+                    supabase={supabase}
+                    onToggle={() => handleToggle(todo.id)}
+                    onRemove={() => handleRemove(todo.id)}
+                    onEdit={handleEdit}
+                  />
+                )}
+              />
+            )
           )}
         </div>
 

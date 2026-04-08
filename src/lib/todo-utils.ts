@@ -126,3 +126,35 @@ export function urgencyColor(urgency: 1 | 2 | 3 | null): string {
 export function importanceColor(importance: 1 | 2 | 3 | null): string {
   return importance !== null ? IMPORTANCE_COLOR[importance] : "";
 }
+
+// ── 아이젠하워 매트릭스 분류 ─────────────────────────────────────────────────
+
+export type MatrixQuadrant = "q1" | "q2" | "q3" | "q4";
+export type MatrixBucket = MatrixQuadrant | "unclassified";
+export type CategorizedTodos = Record<MatrixBucket, Todo[]>;
+
+/**
+ * 긴급도 >= 2 → 긴급, 중요도 >= 2 → 중요 (낮음=1 기준).
+ * urgency·importance가 모두 null인 투두는 'unclassified'로 분류한다.
+ *
+ * - q1: 긴급 + 중요 (지금 당장)
+ * - q2: 비긴급 + 중요 (계획)
+ * - q3: 긴급 + 비중요 (위임)
+ * - q4: 비긴급 + 비중요 (제거)
+ */
+export function categorizeTodos(todos: Todo[]): CategorizedTodos {
+  const result: CategorizedTodos = { q1: [], q2: [], q3: [], q4: [], unclassified: [] };
+  for (const todo of todos) {
+    if (todo.urgency === null && todo.importance === null) {
+      result.unclassified.push(todo);
+      continue;
+    }
+    const urgent = todo.urgency !== null && todo.urgency >= 2;
+    const important = todo.importance !== null && todo.importance >= 2;
+    if (urgent && important) result.q1.push(todo);
+    else if (!urgent && important) result.q2.push(todo);
+    else if (urgent && !important) result.q3.push(todo);
+    else result.q4.push(todo);
+  }
+  return result;
+}

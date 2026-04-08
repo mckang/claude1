@@ -32,21 +32,18 @@ npx vitest run src/lib/todo-utils.test.ts  # 단일 파일 테스트
 | 완료된 스프린트 | Sprint 1 (Epic 1), Sprint 2 (Epic 2), Sprint 3 (Epic 3), Sprint S (Epic S) |
 | 진행 중 스프린트 | Sprint M (Epic M — PWA 모바일 지원) |
 
-### Sprint S 완료 현황
+### Sprint 4 진행 현황
 
 | ID | 제목 | 상태 |
 |---|---|---|
-| ES-T1 | todos 테이블 done → status 마이그레이션 | ✅ 완료 |
-| ES-T2 | todo-utils.ts 타입·함수 업데이트 및 테스트 (79/79) | ✅ 완료 |
-| ES-S1 | 칸반 보드 뷰 전환 버튼 (리스트 ↔ 칸반) | ✅ 완료 |
-| ES-S2 | 칸반 보드 4컬럼 렌더링 | ✅ 완료 |
-| ES-S3 | 드래그&드롭 상태 전이 | ✅ 완료 |
-| ES-S4 | 체크박스 → 종료 토글 (해제 시 → 대기) | ✅ 완료 |
-| ES-S5 | 사이드바 필터 5개로 확장 | ✅ 완료 |
-| ES-S6 | 리스트 뷰 상태 Badge 표시 | ✅ 완료 |
+| E4-T1 | `todo-matrix.tsx` 컴포넌트 구현 (반응형 2×2 그리드) | ✅ 완료 |
+| E4-S1 | 목록 뷰 ↔ 매트릭스 뷰 전환 | ✅ 완료 |
+| E4-S2 | 매트릭스 뷰 4사분면 투두 배치 | ✅ 완료 |
+| E4-S3 | 미분류 투두 별도 영역 표시 | ✅ 완료 |
+| E4-S4 | 매트릭스 뷰에서 완료 토글·삭제 동작 | ✅ 완료 |
 
 전체 스프린트 계획 → [plan/plan.md](plan/plan.md)  
-Epic S 상세 → [plan/epic-todo-status.md](plan/epic-todo-status.md)
+Epic 4 상세 → [plan/epic4-matrix-view.md](plan/epic4-matrix-view.md)
 
 ---
 
