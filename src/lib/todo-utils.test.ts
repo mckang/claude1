@@ -16,6 +16,7 @@ import {
   importanceLabel,
   urgencyColor,
   importanceColor,
+  categorizeTodos,
   type Todo,
   type TodoStatus,
 } from "./todo-utils";
@@ -507,5 +508,81 @@ describe("getActiveCount + getDoneCount", () => {
     const allDone = SAMPLE.map((t) => ({ ...t, status: "done" as TodoStatus }));
     expect(getActiveCount(allDone)).toBe(0);
     expect(getDoneCount(allDone)).toBe(allDone.length);
+  });
+});
+
+describe("categorizeTodos — 아이젠하워 매트릭스 분류", () => {
+  const make = (id: number, urgency: 1 | 2 | 3 | null, importance: 1 | 2 | 3 | null): Todo => ({
+    id,
+    text: `t${id}`,
+    status: "waiting",
+    due_date: null,
+    urgency,
+    importance,
+  });
+
+  it("빈 배열이면 모든 버킷이 비어 있다", () => {
+    const r = categorizeTodos([]);
+    expect(r).toEqual({ q1: [], q2: [], q3: [], q4: [], unclassified: [] });
+  });
+
+  it("urgency·importance가 모두 null이면 unclassified", () => {
+    const t = make(1, null, null);
+    const r = categorizeTodos([t]);
+    expect(r.unclassified).toEqual([t]);
+    expect(r.q1).toEqual([]);
+  });
+
+  it("q1: 긴급(>=2) + 중요(>=2)", () => {
+    const high = make(1, 3, 3);
+    const mid = make(2, 2, 2);
+    const r = categorizeTodos([high, mid]);
+    expect(r.q1).toEqual([high, mid]);
+  });
+
+  it("q2: 비긴급 + 중요 (urgency null 포함)", () => {
+    const low = make(1, 1, 3);
+    const nullU = make(2, null, 2);
+    const r = categorizeTodos([low, nullU]);
+    expect(r.q2).toEqual([low, nullU]);
+  });
+
+  it("q3: 긴급 + 비중요 (importance null 포함)", () => {
+    const a = make(1, 3, 1);
+    const b = make(2, 2, null);
+    const r = categorizeTodos([a, b]);
+    expect(r.q3).toEqual([a, b]);
+  });
+
+  it("q4: 비긴급 + 비중요 (단, 최소 하나는 non-null)", () => {
+    const a = make(1, 1, 1);
+    const b = make(2, 1, null);
+    const c = make(3, null, 1);
+    const r = categorizeTodos([a, b, c]);
+    expect(r.q4).toEqual([a, b, c]);
+  });
+
+  it("여러 투두가 섞여도 각 버킷에 올바르게 분배된다", () => {
+    const todos = [
+      make(1, 3, 3),    // q1
+      make(2, 1, 3),    // q2
+      make(3, 3, 1),    // q3
+      make(4, 1, 1),    // q4
+      make(5, null, null), // unclassified
+      make(6, 2, 2),    // q1
+    ];
+    const r = categorizeTodos(todos);
+    expect(r.q1.map((t) => t.id)).toEqual([1, 6]);
+    expect(r.q2.map((t) => t.id)).toEqual([2]);
+    expect(r.q3.map((t) => t.id)).toEqual([3]);
+    expect(r.q4.map((t) => t.id)).toEqual([4]);
+    expect(r.unclassified.map((t) => t.id)).toEqual([5]);
+  });
+
+  it("입력 배열을 변형하지 않는다 (불변성)", () => {
+    const todos = [make(1, 3, 3), make(2, null, null)];
+    const snapshot = [...todos];
+    categorizeTodos(todos);
+    expect(todos).toEqual(snapshot);
   });
 });
